@@ -1,0 +1,883 @@
+# Netflix Dataset Analysis Project
+# Complete Jupyter Notebook Code
+
+# ============================================================================
+# CELL 1: MARKDOWN
+# ============================================================================
+"""
+# **Netflix Dataset Analysis: Content Trends and Strategic Recommendations**
+
+---
+
+## **Project Overview**
+
+This project analyzes Netflix's content catalog containing **7,789 records** spanning from 2008 to 2021. The analysis focuses on understanding content distribution patterns, genre preferences, and geographical contributions to provide strategic insights for Netflix's content strategy.
+
+---
+
+### **Dataset Information**
+- **Total Records**: 7,789
+- **Columns**: 11
+- **Time Period**: 2008 - 2021
+- **Content Types**: Movies and TV Shows
+- **Key Attributes**: Title, Director, Cast, Country, Release Date, Rating, Duration, Genres
+
+---
+"""
+
+# ============================================================================
+# CELL 2: MARKDOWN
+# ============================================================================
+"""
+## **1. Problem Statement**
+
+Netflix faces increasing competition from platforms like *Amazon Prime*, *Disney+*, and regional OTT providers. To maintain its competitive edge, Netflix must strategically analyze its content catalog to identify:
+
+- **Strengths** in content distribution
+- **Gaps** in market coverage
+- **Opportunities** for growth
+
+### **Focus Area**: *Content Trends Analysis for Strategic Recommendations*
+
+The project aims to uncover how Netflix's content distribution has evolved over the years, enabling identification of:
+- Key genres and audience preferences
+- Global content expansion patterns
+- Strategic insights for future content acquisition
+
+---
+"""
+
+# ============================================================================
+# CELL 3: MARKDOWN
+# ============================================================================
+"""
+## **2. Project Objectives**
+
+1. **Analyze the distribution** of Movies vs. TV Shows over the years
+2. **Identify the most common genres** and track their popularity trends
+3. **Compare country-wise contributions** to Netflix's catalog
+4. **Provide strategic recommendations** for content acquisition and production
+
+---
+"""
+
+# ============================================================================
+# CELL 4: MARKDOWN
+# ============================================================================
+"""
+## **3. Import Required Libraries**
+
+---
+"""
+
+# ============================================================================
+# CELL 5: CODE
+# ============================================================================
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from datetime import datetime
+import warnings
+
+warnings.filterwarnings('ignore')
+
+# Set visualization style
+plt.style.use('seaborn-v0_8-darkgrid')
+sns.set_palette("husl")
+
+# Display settings
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', 100)
+
+print("Libraries imported successfully!")
+
+# ============================================================================
+# CELL 6: MARKDOWN
+# ============================================================================
+"""
+## **4. Load and Explore the Dataset**
+
+---
+"""
+
+# ============================================================================
+# CELL 7: CODE
+# ============================================================================
+
+# Load the dataset
+# Note: Replace 'netflix_titles.csv' with your actual file path
+df = pd.read_csv('Netflix Dataset.csv')
+
+print("Dataset loaded successfully!")
+print(f"\nDataset Shape: {df.shape}")
+print(f"Total Records: {df.shape[0]}")
+print(f"Total Columns: {df.shape[1]}")
+
+# ============================================================================
+# CELL 8: MARKDOWN
+# ============================================================================
+"""
+### **4.1 Dataset Preview**
+
+---
+"""
+
+# ============================================================================
+# CELL 9: CODE
+# ============================================================================
+
+# Display first few records
+df.head(10)
+
+# ============================================================================
+# CELL 10: MARKDOWN
+# ============================================================================
+"""
+### **4.2 Dataset Information**
+
+---
+"""
+
+# ============================================================================
+# CELL 11: CODE
+# ============================================================================
+
+# Dataset information
+df.info()
+
+# ============================================================================
+# CELL 12: MARKDOWN
+# ============================================================================
+"""
+### **4.3 Statistical Summary**
+
+---
+"""
+
+# ============================================================================
+# CELL 13: CODE
+# ============================================================================
+
+# Statistical summary
+df.describe(include='all')
+
+# ============================================================================
+# CELL 14: MARKDOWN
+# ============================================================================
+"""
+### **4.4 Column Names and Data Types**
+
+---
+"""
+
+# ============================================================================
+# CELL 15: CODE
+# ============================================================================
+
+# Display column names and types
+print("Column Names and Data Types:\n")
+for col in df.columns:
+    print(f"{col:20s} : {str(df[col].dtype):15s} - Non-Null Count: {df[col].notna().sum()}")
+
+# ============================================================================
+# CELL 16: MARKDOWN
+# ============================================================================
+"""
+## **5. Data Cleaning and Preprocessing**
+
+---
+"""
+
+# ============================================================================
+# CELL 17: MARKDOWN
+# ============================================================================
+"""
+### **5.1 Check for Missing Values**
+
+---
+"""
+
+# ============================================================================
+# CELL 18: CODE
+# ============================================================================
+
+# Missing values analysis
+missing_values = pd.DataFrame({
+    'Column': df.columns,
+    'Missing_Count': df.isnull().sum(),
+    'Missing_Percentage': (df.isnull().sum() / len(df)) * 100
+})
+
+missing_values = missing_values[missing_values['Missing_Count'] > 0].sort_values('Missing_Count', ascending=False)
+print(missing_values)
+
+# Visualize missing values
+plt.figure(figsize=(10, 6))
+plt.barh(missing_values['Column'], missing_values['Missing_Percentage'], color='coral')
+plt.xlabel('Missing Percentage (%)', fontsize=12, fontweight='bold')
+plt.ylabel('Columns', fontsize=12, fontweight='bold')
+plt.title('Missing Values Analysis', fontsize=14, fontweight='bold')
+plt.grid(axis='x', alpha=0.3)
+plt.tight_layout()
+plt.show()
+
+# ============================================================================
+# CELL 19: MARKDOWN
+# ============================================================================
+"""
+### **5.2 Handle Missing Values**
+
+---
+"""
+
+# ============================================================================
+# CELL 20: CODE
+# ============================================================================
+
+# Create a copy for cleaning
+df_clean = df.copy()
+
+# Fill missing values appropriately
+df_clean['director'] = df_clean['director'].fillna('Unknown')
+df_clean['cast'] = df_clean['cast'].fillna('Unknown')
+df_clean['country'] = df_clean['country'].fillna('Unknown')
+df_clean['date_added'] = pd.to_datetime(df_clean['date_added'], errors='coerce')
+df_clean['rating'] = df_clean['rating'].fillna('Not Rated')
+
+# Drop rows with missing critical information
+df_clean = df_clean.dropna(subset=['title', 'type', 'release_year'])
+
+print(f"Dataset shape after cleaning: {df_clean.shape}")
+print(f"Records removed: {df.shape[0] - df_clean.shape[0]}")
+
+# ============================================================================
+# CELL 21: MARKDOWN
+# ============================================================================
+"""
+### **5.3 Feature Engineering**
+
+---
+"""
+
+# ============================================================================
+# CELL 22: CODE
+# ============================================================================
+
+# Extract year and month from date_added
+df_clean['year_added'] = df_clean['date_added'].dt.year
+df_clean['month_added'] = df_clean['date_added'].dt.month
+df_clean['month_name'] = df_clean['date_added'].dt.month_name()
+
+# Extract primary country (first country listed)
+df_clean['primary_country'] = df_clean['country'].str.split(',').str[0].str.strip()
+
+# Extract primary genre (first genre listed)
+df_clean['primary_genre'] = df_clean['listed_in'].str.split(',').str[0].str.strip()
+
+# Calculate content age (from release year to 2021)
+df_clean['content_age'] = 2021 - df_clean['release_year']
+
+print("Feature engineering completed!")
+print("\nNew columns added:")
+print("- year_added")
+print("- month_added")
+print("- month_name")
+print("- primary_country")
+print("- primary_genre")
+print("- content_age")
+
+# ============================================================================
+# CELL 23: MARKDOWN
+# ============================================================================
+"""
+## **6. Exploratory Data Analysis (EDA)**
+
+---
+"""
+
+# ============================================================================
+# CELL 24: MARKDOWN
+# ============================================================================
+"""
+### **6.1 Content Type Distribution (Movies vs. TV Shows)**
+
+---
+"""
+
+# ============================================================================
+# CELL 25: CODE
+# ============================================================================
+
+# Content type distribution
+content_type_counts = df_clean['type'].value_counts()
+content_type_pct = df_clean['type'].value_counts(normalize=True) * 100
+
+print("Content Type Distribution:")
+print(content_type_counts)
+print("\nPercentage Distribution:")
+print(content_type_pct)
+
+# Visualization
+fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+
+# Pie chart
+axes[0].pie(content_type_counts, labels=content_type_counts.index, autopct='%1.1f%%',
+            startangle=90, colors=['#FF6B6B', '#4ECDC4'])
+axes[0].set_title('Content Type Distribution', fontsize=14, fontweight='bold')
+
+# Bar chart
+axes[1].bar(content_type_counts.index, content_type_counts.values, 
+            color=['#FF6B6B', '#4ECDC4'], width=0.5)
+axes[1].set_ylabel('Count', fontsize=12, fontweight='bold')
+axes[1].set_title('Content Type Counts', fontsize=14, fontweight='bold')
+axes[1].grid(axis='y', alpha=0.3)
+
+for i, v in enumerate(content_type_counts.values):
+    axes[1].text(i, v + 50, str(v), ha='center', fontweight='bold')
+
+plt.tight_layout()
+plt.show()
+
+# ============================================================================
+# CELL 26: MARKDOWN
+# ============================================================================
+"""
+### **6.2 Content Addition Trends Over Years**
+
+---
+"""
+
+# ============================================================================
+# CELL 27: CODE
+# ============================================================================
+
+# Content addition by year
+yearly_addition = df_clean.groupby(['year_added', 'type']).size().reset_index(name='count')
+yearly_addition_pivot = yearly_addition.pivot(index='year_added', columns='type', values='count').fillna(0)
+
+# Visualization
+plt.figure(figsize=(14, 6))
+
+# Line plot for trends
+for content_type in yearly_addition_pivot.columns:
+    plt.plot(yearly_addition_pivot.index, yearly_addition_pivot[content_type], 
+             marker='o', linewidth=2, label=content_type, markersize=6)
+
+plt.xlabel('Year', fontsize=12, fontweight='bold')
+plt.ylabel('Number of Titles Added', fontsize=12, fontweight='bold')
+plt.title('Content Addition Trends Over Years', fontsize=14, fontweight='bold')
+plt.legend(title='Content Type', fontsize=11)
+plt.grid(alpha=0.3)
+plt.tight_layout()
+plt.show()
+
+# Total content by year
+total_yearly = yearly_addition_pivot.sum(axis=1)
+print("\nTotal Content Added by Year:")
+print(total_yearly.sort_values(ascending=False))
+
+# ============================================================================
+# CELL 28: MARKDOWN
+# ============================================================================
+"""
+### **6.3 Top 15 Genres Analysis**
+
+---
+"""
+
+# ============================================================================
+# CELL 29: CODE
+# ============================================================================
+
+# Genre distribution
+genre_counts = df_clean['primary_genre'].value_counts().head(15)
+
+# Visualization
+plt.figure(figsize=(12, 8))
+plt.barh(genre_counts.index, genre_counts.values, color='skyblue')
+plt.xlabel('Count', fontsize=12, fontweight='bold')
+plt.ylabel('Genre', fontsize=12, fontweight='bold')
+plt.title('Top 15 Genres on Netflix', fontsize=14, fontweight='bold')
+plt.gca().invert_yaxis()
+plt.grid(axis='x', alpha=0.3)
+
+for i, v in enumerate(genre_counts.values):
+    plt.text(v + 10, i, str(v), va='center', fontweight='bold')
+
+plt.tight_layout()
+plt.show()
+
+print("\nTop 15 Genres:")
+print(genre_counts)
+
+# ============================================================================
+# CELL 30: MARKDOWN
+# ============================================================================
+"""
+### **6.4 Genre Distribution by Content Type**
+
+---
+"""
+
+# ============================================================================
+# CELL 31: CODE
+# ============================================================================
+
+# Top genres by content type
+genre_by_type = df_clean.groupby(['type', 'primary_genre']).size().reset_index(name='count')
+
+top_movie_genres = genre_by_type[genre_by_type['type'] == 'Movie'].nlargest(10, 'count')
+top_tv_genres = genre_by_type[genre_by_type['type'] == 'TV Show'].nlargest(10, 'count')
+
+# Visualization
+fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+
+# Movies
+axes[0].barh(top_movie_genres['primary_genre'], top_movie_genres['count'], color='coral')
+axes[0].set_xlabel('Count', fontsize=11, fontweight='bold')
+axes[0].set_title('Top 10 Movie Genres', fontsize=13, fontweight='bold')
+axes[0].invert_yaxis()
+axes[0].grid(axis='x', alpha=0.3)
+
+# TV Shows
+axes[1].barh(top_tv_genres['primary_genre'], top_tv_genres['count'], color='lightgreen')
+axes[1].set_xlabel('Count', fontsize=11, fontweight='bold')
+axes[1].set_title('Top 10 TV Show Genres', fontsize=13, fontweight='bold')
+axes[1].invert_yaxis()
+axes[1].grid(axis='x', alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+# ============================================================================
+# CELL 32: MARKDOWN
+# ============================================================================
+"""
+### **6.5 Country-wise Content Contribution**
+
+---
+"""
+
+# ============================================================================
+# CELL 33: CODE
+# ============================================================================
+
+# Top countries by content count
+country_counts = df_clean['primary_country'].value_counts().head(15)
+
+# Visualization
+plt.figure(figsize=(12, 8))
+plt.barh(country_counts.index, country_counts.values, color='mediumpurple')
+plt.xlabel('Count', fontsize=12, fontweight='bold')
+plt.ylabel('Country', fontsize=12, fontweight='bold')
+plt.title('Top 15 Countries by Content Contribution', fontsize=14, fontweight='bold')
+plt.gca().invert_yaxis()
+plt.grid(axis='x', alpha=0.3)
+
+for i, v in enumerate(country_counts.values):
+    plt.text(v + 20, i, str(v), va='center', fontweight='bold')
+
+plt.tight_layout()
+plt.show()
+
+print("\nTop 15 Countries:")
+print(country_counts)
+
+# ============================================================================
+# CELL 34: MARKDOWN
+# ============================================================================
+"""
+### **6.6 Country-wise Content Type Distribution**
+
+---
+"""
+
+# ============================================================================
+# CELL 35: CODE
+# ============================================================================
+
+# Top 10 countries content type distribution
+top_countries = df_clean['primary_country'].value_counts().head(10).index
+country_type_data = df_clean[df_clean['primary_country'].isin(top_countries)]
+country_type_counts = country_type_data.groupby(['primary_country', 'type']).size().reset_index(name='count')
+country_type_pivot = country_type_counts.pivot(index='primary_country', columns='type', values='count').fillna(0)
+
+# Sort by total content
+country_type_pivot['Total'] = country_type_pivot.sum(axis=1)
+country_type_pivot = country_type_pivot.sort_values('Total', ascending=True)
+country_type_pivot = country_type_pivot.drop('Total', axis=1)
+
+# Visualization
+country_type_pivot.plot(kind='barh', stacked=True, figsize=(12, 8), color=['#FF6B6B', '#4ECDC4'])
+plt.xlabel('Number of Titles', fontsize=12, fontweight='bold')
+plt.ylabel('Country', fontsize=12, fontweight='bold')
+plt.title('Content Type Distribution by Top 10 Countries', fontsize=14, fontweight='bold')
+plt.legend(title='Content Type', fontsize=11)
+plt.grid(axis='x', alpha=0.3)
+plt.tight_layout()
+plt.show()
+
+# ============================================================================
+# CELL 36: MARKDOWN
+# ============================================================================
+"""
+### **6.7 Content Release Year Distribution**
+
+---
+"""
+
+# ============================================================================
+# CELL 37: CODE
+# ============================================================================
+
+# Release year distribution
+release_year_counts = df_clean['release_year'].value_counts().sort_index()
+
+# Filter for years with significant data (e.g., 1990 onwards)
+release_year_filtered = release_year_counts[release_year_counts.index >= 1990]
+
+# Visualization
+plt.figure(figsize=(14, 6))
+plt.plot(release_year_filtered.index, release_year_filtered.values, 
+         marker='o', linewidth=2, markersize=4, color='darkgreen')
+plt.xlabel('Release Year', fontsize=12, fontweight='bold')
+plt.ylabel('Number of Titles', fontsize=12, fontweight='bold')
+plt.title('Content Distribution by Release Year (1990-2021)', fontsize=14, fontweight='bold')
+plt.grid(alpha=0.3)
+plt.tight_layout()
+plt.show()
+
+# Peak years
+print("\nTop 10 Years by Content Release:")
+print(release_year_counts.sort_values(ascending=False).head(10))
+
+# ============================================================================
+# CELL 38: MARKDOWN
+# ============================================================================
+"""
+### **6.8 Rating Distribution**
+
+---
+"""
+
+# ============================================================================
+# CELL 39: CODE
+# ============================================================================
+
+# Rating distribution
+rating_counts = df_clean['rating'].value_counts().head(12)
+
+# Visualization
+plt.figure(figsize=(12, 6))
+plt.bar(rating_counts.index, rating_counts.values, color='teal', width=0.6)
+plt.xlabel('Rating', fontsize=12, fontweight='bold')
+plt.ylabel('Count', fontsize=12, fontweight='bold')
+plt.title('Content Distribution by Rating', fontsize=14, fontweight='bold')
+plt.xticks(rotation=45)
+plt.grid(axis='y', alpha=0.3)
+
+for i, v in enumerate(rating_counts.values):
+    plt.text(i, v + 20, str(v), ha='center', fontweight='bold')
+
+plt.tight_layout()
+plt.show()
+
+print("\nRating Distribution:")
+print(rating_counts)
+
+# ============================================================================
+# CELL 40: MARKDOWN
+# ============================================================================
+"""
+### **6.9 Monthly Addition Patterns**
+
+---
+"""
+
+# ============================================================================
+# CELL 41: CODE
+# ============================================================================
+
+# Monthly addition pattern
+monthly_pattern = df_clean['month_name'].value_counts()
+month_order = ['January', 'February', 'March', 'April', 'May', 'June', 
+               'July', 'August', 'September', 'October', 'November', 'December']
+monthly_pattern = monthly_pattern.reindex(month_order)
+
+# Visualization
+plt.figure(figsize=(12, 6))
+plt.plot(monthly_pattern.index, monthly_pattern.values, marker='o', 
+         linewidth=2, markersize=8, color='orangered')
+plt.xlabel('Month', fontsize=12, fontweight='bold')
+plt.ylabel('Number of Titles Added', fontsize=12, fontweight='bold')
+plt.title('Content Addition Pattern by Month', fontsize=14, fontweight='bold')
+plt.xticks(rotation=45)
+plt.grid(alpha=0.3)
+plt.tight_layout()
+plt.show()
+
+print("\nMonthly Addition Pattern:")
+print(monthly_pattern)
+
+# ============================================================================
+# CELL 42: MARKDOWN
+# ============================================================================
+"""
+### **6.10 Content Age Distribution**
+
+---
+"""
+
+# ============================================================================
+# CELL 43: CODE
+# ============================================================================
+
+# Content age analysis
+content_age_stats = df_clean['content_age'].describe()
+
+# Visualization
+plt.figure(figsize=(12, 6))
+plt.hist(df_clean['content_age'], bins=50, color='slateblue', edgecolor='black', alpha=0.7)
+plt.xlabel('Content Age (Years)', fontsize=12, fontweight='bold')
+plt.ylabel('Frequency', fontsize=12, fontweight='bold')
+plt.title('Distribution of Content Age', fontsize=14, fontweight='bold')
+plt.axvline(df_clean['content_age'].mean(), color='red', linestyle='--', 
+            linewidth=2, label=f'Mean: {df_clean["content_age"].mean():.1f} years')
+plt.legend(fontsize=11)
+plt.grid(alpha=0.3)
+plt.tight_layout()
+plt.show()
+
+print("\nContent Age Statistics:")
+print(content_age_stats)
+
+# ============================================================================
+# CELL 44: MARKDOWN
+# ============================================================================
+"""
+## **7. Advanced Analysis**
+
+---
+"""
+
+# ============================================================================
+# CELL 45: MARKDOWN
+# ============================================================================
+"""
+### **7.1 Year-over-Year Growth Analysis**
+
+---
+"""
+
+# ============================================================================
+# CELL 46: CODE
+# ============================================================================
+
+# Calculate year-over-year growth
+yearly_total = df_clean.groupby('year_added').size()
+yoy_growth = yearly_total.pct_change() * 100
+
+# Visualization
+fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+
+# Yearly totals
+axes[0].bar(yearly_total.index, yearly_total.values, color='steelblue', width=0.7)
+axes[0].set_xlabel('Year', fontsize=11, fontweight='bold')
+axes[0].set_ylabel('Number of Titles', fontsize=11, fontweight='bold')
+axes[0].set_title('Total Content Added by Year', fontsize=13, fontweight='bold')
+axes[0].grid(axis='y', alpha=0.3)
+
+# YoY growth
+colors = ['green' if x > 0 else 'red' for x in yoy_growth.values]
+axes[1].bar(yoy_growth.index, yoy_growth.values, color=colors, width=0.7)
+axes[1].set_xlabel('Year', fontsize=11, fontweight='bold')
+axes[1].set_ylabel('Growth Rate (%)', fontsize=11, fontweight='bold')
+axes[1].set_title('Year-over-Year Growth Rate', fontsize=13, fontweight='bold')
+axes[1].axhline(y=0, color='black', linestyle='-', linewidth=0.8)
+axes[1].grid(axis='y', alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+print("\nYear-over-Year Growth Rates:")
+print(yoy_growth)
+
+# ============================================================================
+# CELL 47: MARKDOWN
+# ============================================================================
+"""
+### **7.2 Genre Evolution Over Time**
+
+---
+"""
+
+# ============================================================================
+# CELL 48: CODE
+# ============================================================================
+
+# Top 5 genres evolution
+top_5_genres = df_clean['primary_genre'].value_counts().head(5).index
+genre_yearly = df_clean[df_clean['primary_genre'].isin(top_5_genres)].groupby(['year_added', 'primary_genre']).size().reset_index(name='count')
+genre_yearly_pivot = genre_yearly.pivot(index='year_added', columns='primary_genre', values='count').fillna(0)
+
+# Visualization
+plt.figure(figsize=(14, 7))
+for genre in genre_yearly_pivot.columns:
+    plt.plot(genre_yearly_pivot.index, genre_yearly_pivot[genre], 
+             marker='o', linewidth=2, label=genre, markersize=6)
+
+plt.xlabel('Year', fontsize=12, fontweight='bold')
+plt.ylabel('Number of Titles', fontsize=12, fontweight='bold')
+plt.title('Evolution of Top 5 Genres Over Time', fontsize=14, fontweight='bold')
+plt.legend(title='Genre', fontsize=10, loc='upper left')
+plt.grid(alpha=0.3)
+plt.tight_layout()
+plt.show()
+
+# ============================================================================
+# CELL 49: MARKDOWN
+# ============================================================================
+"""
+### **7.3 Content Type Ratio Evolution**
+
+---
+"""
+
+# ============================================================================
+# CELL 50: CODE
+# ============================================================================
+
+# Calculate movie vs TV show ratio by year
+type_yearly = df_clean.groupby(['year_added', 'type']).size().reset_index(name='count')
+type_yearly_pivot = type_yearly.pivot(index='year_added', columns='type', values='count').fillna(0)
+type_yearly_pivot['Movie_Ratio'] = (type_yearly_pivot['Movie'] / (type_yearly_pivot['Movie'] + type_yearly_pivot['TV Show'])) * 100
+type_yearly_pivot['TV_Ratio'] = (type_yearly_pivot['TV Show'] / (type_yearly_pivot['Movie'] + type_yearly_pivot['TV Show'])) * 100
+
+# Visualization
+plt.figure(figsize=(14, 6))
+plt.plot(type_yearly_pivot.index, type_yearly_pivot['Movie_Ratio'], 
+         marker='o', linewidth=2, label='Movies', markersize=7, color='#FF6B6B')
+plt.plot(type_yearly_pivot.index, type_yearly_pivot['TV_Ratio'], 
+         marker='s', linewidth=2, label='TV Shows', markersize=7, color='#4ECDC4')
+
+plt.xlabel('Year', fontsize=12, fontweight='bold')
+plt.ylabel('Percentage (%)', fontsize=12, fontweight='bold')
+plt.title('Content Type Ratio Evolution Over Time', fontsize=14, fontweight='bold')
+plt.legend(fontsize=11)
+plt.grid(alpha=0.3)
+plt.tight_layout()
+plt.show()
+
+print("\nContent Type Ratio by Year:")
+print(type_yearly_pivot[['Movie_Ratio', 'TV_Ratio']])
+
+# ============================================================================
+# CELL 51: MARKDOWN
+# ============================================================================
+"""
+### **7.4 International Content Growth**
+
+---
+"""
+
+# ============================================================================
+# CELL 52: CODE
+# ============================================================================
+
+# Define major content-producing countries
+major_countries = ['United States', 'India', 'United Kingdom', 'Japan', 'South Korea']
+intl_content = df_clean[df_clean['primary_country'].isin(major_countries)]
+intl_yearly = intl_content.groupby(['year_added', 'primary_country']).size().reset_index(name='count')
+intl_yearly_pivot = intl_yearly.pivot(index='year_added', columns='primary_country', values='count').fillna(0)
+
+# Visualization
+plt.figure(figsize=(14, 7))
+for country in intl_yearly_pivot.columns:
+    plt.plot(intl_yearly_pivot.index, intl_yearly_pivot[country], 
+             marker='o', linewidth=2, label=country, markersize=5)
+
+plt.xlabel('Year', fontsize=12, fontweight='bold')
+plt.ylabel('Number of Titles', fontsize=12, fontweight='bold')
+plt.title('International Content Growth by Major Countries', fontsize=14, fontweight='bold')
+plt.legend(title='Country', fontsize=10)
+plt.grid(alpha=0.3)
+plt.tight_layout()
+plt.show()
+
+# ============================================================================
+# CELL 53: MARKDOWN
+# ============================================================================
+"""
+## **8. Key Insights and Findings**
+
+---
+"""
+
+# ============================================================================
+# CELL 54: CODE
+# ============================================================================
+
+# Generate comprehensive insights
+print("=" * 80)
+print(" " * 20 + "KEY INSIGHTS AND FINDINGS")
+print("=" * 80)
+
+print("\n1. CONTENT TYPE DISTRIBUTION")
+print("-" * 80)
+for content_type, count in content_type_counts.items():
+    pct = (count / content_type_counts.sum()) * 100
+    print(f"   {content_type}: {count} titles ({pct:.1f}%)")
+
+print("\n2. CONTENT GROWTH TRENDS")
+print("-" * 80)
+peak_year = yearly_total.idxmax()
+peak_count = yearly_total.max()
+print(f"   Peak Year: {peak_year} with {peak_count} titles added")
+print(f"   Average Annual Addition: {yearly_total.mean():.0f} titles")
+recent_growth = yoy_growth[yoy_growth.index >= 2018].mean()
+print(f"   Average Growth Rate (2018-2021): {recent_growth:.1f}%")
+
+print("\n3. GENRE INSIGHTS")
+print("-" * 80)
+print(f"   Most Popular Genre: {genre_counts.index[0]} ({genre_counts.values[0]} titles)")
+print(f"   Top 3 Movie Genres: {', '.join(top_movie_genres['primary_genre'].head(3).values)}")
+print(f"   Top 3 TV Show Genres: {', '.join(top_tv_genres['primary_genre'].head(3).values)}")
+
+print("\n4. GEOGRAPHICAL INSIGHTS")
+print("-" * 80)
+print(f"   Top Content Producer: {country_counts.index[0]} ({country_counts.values[0]} titles)")
+us_pct = (country_counts['United States'] / country_counts.sum()) * 100
+print(f"   US Content Dominance: {us_pct:.1f}% of top 15 countries")
+intl_count = df_clean[df_clean['primary_country'] != 'United States'].shape[0]
+intl_pct = (intl_count / df_clean.shape[0]) * 100
+print(f"   International Content: {intl_pct:.1f}% of total catalog")
+
+print("\n5. CONTENT CHARACTERISTICS")
+print("-" * 80)
+print(f"   Average Content Age: {df_clean['content_age'].mean():.1f} years")
+print(f"   Most Common Rating: {rating_counts.index[0]} ({rating_counts.values[0]} titles)")
+print(f"   Peak Addition Month: {monthly_pattern.idxmax()} ({monthly_pattern.max()} titles)")
+
+print("\n6. RECENT TRENDS (2019-2021)")
+print("-" * 80)
+recent_data = df_clean[df_clean['year_added'] >= 2019]
+recent_movie_pct = (recent_data[recent_data['type'] == 'Movie'].shape[0] / recent_data.shape[0]) * 100
+print(f"   Movie Percentage: {recent_movie_pct:.1f}%")
+print(f"   TV Show Percentage: {100 - recent_movie_pct:.1f}%")
+recent_intl = recent_data[recent_data['primary_country'] != 'United States'].shape[0]
+recent_intl_pct = (recent_intl / recent_data.shape[0]) * 100
+print(f"   International Content: {recent_intl_pct:.1f}%")
+
+print("\n" + "=" * 80)
+
+# ============================================================================
+# CELL 55: MARKDOWN
+# ============================================================================
+"""
+## **9. Strategic Recommendations**
+
+---
+
+Based on the comprehensive analysis of Netflix's content catalog, the following strategic recommendations are
